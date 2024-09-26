@@ -1,6 +1,5 @@
 apt-get install tesseract-ocr
 pip install pytesseract
-
 import os
 import numpy as np
 import pandas as pd
@@ -17,7 +16,7 @@ from sklearn.preprocessing import LabelEncoder
 import re
 from tqdm import tqdm 
 
-# Load dataset 
+# dataset 
 try:
     train_data = pd.read_csv('/content/drive/MyDrive/train.csv').head(1000).reset_index(drop=True)
     test_data = pd.read_csv('/content/drive/MyDrive/test.csv').head(500).reset_index(drop=True)
@@ -55,7 +54,7 @@ def extractvalueandunit(text, entity):
                 return value, unit
     return None, None
 
-# Function to download and preprocess image
+# download and preprocess image
 def preprocessimage(url):
     try:
         response = requests.get(url, stream=True)
@@ -69,7 +68,7 @@ def preprocessimage(url):
         print(f"Error processing image from {url}: {e}")
         return None
 
-# Function to extract image features using ResNet50
+#extract image features using ResNet50
 def extract_image_features(img_array):
     try:
         features = resnet_model.predict(img_array)
@@ -78,7 +77,7 @@ def extract_image_features(img_array):
         print(f"Error extracting features: {e}")
         return None
 
-# Function to extract text from image using Tesseract OCR
+#extract text from image using Tesseract OCR
 def extract_text_from_image(image_url):
     try:
         response = requests.get(image_url, stream=True)
@@ -90,15 +89,15 @@ def extract_text_from_image(image_url):
         print(f"Error extracting text from {image_url}: {e}")
         return ""
 
-# Function to process text and extract value and unit
+# process text and extract value and unit
 def process_text_for_prediction(text, entity):
     value, unit = extractvalueandunit(text, entity)
     if value and unit:
         return f"{value} {unit}"
     return ""
 
-# Batch processing function for training data
-def prepare_training_data_in_batches(data, batch_size=250):
+# Batch processing function 
+def batchdatapreparing(data, batch_size=250):
     total_batches = len(data) // batch_size
     features = []
     labels = []
@@ -129,7 +128,7 @@ def prepare_training_data_in_batches(data, batch_size=250):
     return np.array(features), np.array(labels)
 
 try:
-    X, y = prepare_training_data_in_batches(train_data)
+    X, y = batchdatapreparing(train_data)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
     le = LabelEncoder()
     y_train_encoded = le.fit_transform(y_train)
@@ -144,7 +143,7 @@ except Exception as e:
     raise RuntimeError(f"Error training XGBoost model: {e}")
 
 # Batch processing for test data with predictions
-def predict_test_data_in_batches(batch_size=250):
+def predictdata(batch_size=250):
     output_file = '/content/drive/MyDrive/test_out.csv'
     
     if not os.path.exists(output_file):
@@ -184,4 +183,4 @@ def predict_test_data_in_batches(batch_size=250):
         predictions = [] 
         print(f"Completed batch {batch_num + 1} of {total_batches}")
 
-predict_test_data_in_batches()
+predictdata()
