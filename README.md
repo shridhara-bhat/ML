@@ -35,5 +35,3 @@ The output file should be a csv with 2 columns:
 2. **dataset/test.csv**: Test file without output labels (`entity_value`). Generate predictions using your model/solution on this file's data and format the output file to match sample_test_out.csv (Refer the above section "Output Format")
 3. **dataset/test_out.csv**: Outputs for test.csv. The output for test.csv is formatted in the exact same way.
 
-
-"# Amazon-MLChallenge" 
