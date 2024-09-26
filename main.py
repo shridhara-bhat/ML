@@ -15,22 +15,22 @@ from sklearn.model_selection import train_test_split
 import requests
 from sklearn.preprocessing import LabelEncoder
 import re
-from tqdm import tqdm  # For progress bar
+from tqdm import tqdm 
 
-# Load dataset (1,000 for training, 500 for testing)
+# Load dataset 
 try:
     train_data = pd.read_csv('/content/drive/MyDrive/train.csv').head(1000).reset_index(drop=True)
     test_data = pd.read_csv('/content/drive/MyDrive/test.csv').head(500).reset_index(drop=True)
 except Exception as e:
     raise RuntimeError(f"Error loading dataset: {e}")
 
-# Initialize ResNet50 model for image feature extraction
+# image feature extraction
 try:
     resnet_model = ResNet50(weights='imagenet', include_top=False, pooling='avg')
 except Exception as e:
     raise RuntimeError(f"Error initializing ResNet50 model: {e}")
 
-# Entity unit map as provided earlier
+# Entity unit map
 entity_unit_map = {
     'width': {'centimetre', 'foot', 'inch', 'metre', 'millimetre', 'yard'},
     'depth': {'centimetre', 'foot', 'inch', 'metre', 'millimetre', 'yard'},
@@ -42,8 +42,8 @@ entity_unit_map = {
     'item_volume': {'centilitre', 'cubic foot', 'cubic inch', 'cup', 'decilitre', 'fluid ounce', 'gallon', 'imperial gallon', 'litre', 'microlitre', 'millilitre', 'pint', 'quart'}
 }
 
-# Function to extract value and unit
-def extract_value_and_unit(text, entity):
+#extract value and unit
+def extractvalueandunit(text, entity):
     pattern = r'([+-]?\d+(?:\.\d+)?)\s{0,1}(cm|ft|in|m|mm|yard|g|kg|ug|mg|oz|pd|ton|kv|mv|v|kw|w|cl|ft\^3|in\^3|c|dl|floz|gal|imp gal|L|ul|ml|pt|qt)'
     matches = re.findall(pattern, text)
     
@@ -56,7 +56,7 @@ def extract_value_and_unit(text, entity):
     return None, None
 
 # Function to download and preprocess image
-def download_and_preprocess_image(url):
+def preprocessimage(url):
     try:
         response = requests.get(url, stream=True)
         img = Image.open(response.raw)
@@ -92,7 +92,7 @@ def extract_text_from_image(image_url):
 
 # Function to process text and extract value and unit
 def process_text_for_prediction(text, entity):
-    value, unit = extract_value_and_unit(text, entity)
+    value, unit = extractvalueandunit(text, entity)
     if value and unit:
         return f"{value} {unit}"
     return ""
@@ -109,7 +109,7 @@ def prepare_training_data_in_batches(data, batch_size=250):
             entity_value = row['entity_value']
             entity_type = row['entity_name']
 
-            img_array = download_and_preprocess_image(image_url)
+            img_array = preprocessimage(image_url)
             if img_array is None:
                 continue
 
@@ -120,7 +120,7 @@ def prepare_training_data_in_batches(data, batch_size=250):
             text = extract_text_from_image(image_url)
             processed_text = process_text_for_prediction(text, entity_type)
 
-            combined_features = np.hstack([img_features, len(processed_text)])  # Combine image features with text length
+            combined_features = np.hstack([img_features, len(processed_text)])
             features.append(combined_features)
             labels.append(entity_value)
 
@@ -128,7 +128,6 @@ def prepare_training_data_in_batches(data, batch_size=250):
     
     return np.array(features), np.array(labels)
 
-# Load and prepare the training data
 try:
     X, y = prepare_training_data_in_batches(train_data)
     X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -161,7 +160,7 @@ def predict_test_data_in_batches(batch_size=250):
             image_url = row['image_link']
             entity_type = row['entity_name']
 
-            img_array = download_and_preprocess_image(image_url)
+            img_array = preprocessimage(image_url)
             if img_array is None:
                 predictions.append({'index': index, 'prediction': ''})
                 continue
@@ -182,8 +181,7 @@ def predict_test_data_in_batches(batch_size=250):
             predictions.append({'index': index, 'prediction': predicted_text})
 
         pd.DataFrame(predictions).to_csv(output_file, mode='a', header=False, index=False)
-        predictions = []  # Clear predictions after each batch
+        predictions = [] 
         print(f"Completed batch {batch_num + 1} of {total_batches}")
 
-# Run predictions on test data and write results
 predict_test_data_in_batches()
